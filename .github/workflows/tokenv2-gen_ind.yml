@@ -1,0 +1,69 @@
+name: 🔄 JWT Token Generator (India Time GMT+5:30)
+
+on:
+  schedule:
+    - cron: '0 21,3,9,15 * * *' # 2:30 AM, 8:30 AM, 2:30 PM, 8:30 PM IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🔐 Load Telegram Secrets
+        run: |
+          echo "TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}" >> $GITHUB_ENV
+          echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> $GITHUB_ENV
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: ⚙️ Run JWT Token Generator Script
+        run: |
+          echo "🚀 Running token generation script..."
+          python jwt_generator.py
+
+      - name: 📤 Commit & Force Push Token Files
+        env:
+          PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add .
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "🔄 Update JWT tokens"
+            git push -f https://x-access-token:${PAT}@github.com/${{ github.repository }}.git main
+          else
+            echo "✨ No changes to commit."
+          fi
+
+      - name: 💬 Notify Success via Telegram
+        if: success()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode=Markdown \
+            -d text="✅ *JWT Token Generation Completed Successfully!* 🎉"
+
+      - name: 🚨 Notify Failure via Telegram
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode=Markdown \
+            -d text="❌ *JWT Token Generation Failed!* ⚠️ Check GitHub Actions logs."
