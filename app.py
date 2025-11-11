@@ -35,7 +35,7 @@ def send_friend_request(uid, region, token, results):
         "Authorization": f"Bearer {token}",
         "X-Unity-Version": "2018.4.11f1",
         "X-GA": "v1 1",
-        "ReleaseVersion": "OB48",
+        "ReleaseVersion": "OB51",
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": "16",
         "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; SM-N975F Build/PI)",
